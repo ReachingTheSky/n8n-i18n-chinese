@@ -26,6 +26,7 @@ RUN NODE_ENV=production DOCKER_BUILD=true \
 # 2. 运行阶段
 FROM n8nio/base:${NODE_VERSION}
 ENV NODE_ENV=production
+ENV NPM_CONFIG_IGNORE_SCRIPTS=true
 
 # 构建参数
 ARG N8N_VERSION=1.99.1
