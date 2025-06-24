@@ -1,0 +1,153 @@
+name: Build N8N Integrated Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      n8n_version:
+        description: 'N8N Version to build (e.g., 1.99.1)'
+        required: true
+        default: '1.99.1'
+      build_platforms:
+        description: 'Docker platforms to build'
+        required: true
+        default: 'linux/amd64,linux/arm64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/arm64'
+          - 'linux/amd64,linux/arm64'
+      push_to_registry:
+        description: 'Push to GitHub Container Registry'
+        type: boolean
+        default: true
+      include_enterprise_mock:
+        description: 'Include Enterprise Mock features'
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/n8n-integrated
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Validate N8N version
+        run: |
+          echo "🔍 Validating N8N version ${{ github.event.inputs.n8n_version }}"
+          if ! curl -s "https://api.github.com/repos/n8n-io/n8n/releases/tags/n8n@${{ github.event.inputs.n8n_version }}" | grep -q "tag_name"; then
+            echo "❌ N8N version ${{ github.event.inputs.n8n_version }} not found"
+            exit 1
+          fi
+          echo "✅ N8N version ${{ github.event.inputs.n8n_version }} validated"
+
+      - name: Clone N8N source
+        run: |
+          echo "📥 Cloning N8N version ${{ github.event.inputs.n8n_version }}"
+          git clone --depth 1 --branch n8n@${{ github.event.inputs.n8n_version }} https://github.com/n8n-io/n8n.git n8n-source
+          echo "✅ N8N source cloned successfully"
+
+      - name: Apply Chinese translation
+        run: |
+          echo "🌏 Applying Chinese translation"
+          mkdir -p n8n-source/packages/frontend/@n8n/i18n/src/locales
+          cp languages/zh-CN.json n8n-source/packages/frontend/@n8n/i18n/src/locales/zh-CN.json
+          echo "✅ Chinese translation applied"
+
+      - name: Apply Enterprise Mock features
+        if: ${{ github.event.inputs.include_enterprise_mock == 'true' }}
+        run: |
+          echo "🏢 Applying Enterprise Mock features"
+          node scripts/integrate-features.js
+          echo "✅ Enterprise Mock features applied"
+
+      - name: Install dependencies and build
+        working-directory: ./n8n-source
+        run: |
+          echo "📦 Installing dependencies"
+          pnpm install --frozen-lockfile
+          echo "🔨 Building N8N"
+          pnpm build
+          echo "✅ Build completed"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: ${{ github.event.inputs.push_to_registry == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.event.inputs.n8n_version }}
+            type=raw,value=${{ github.event.inputs.n8n_version }}-{{date 'YYYYMMDD'}}
+
+      - name: Copy Docker files
+        run: |
+          cp templates/docker/Dockerfile.integrated n8n-source/Dockerfile
+          cp templates/docker/docker-entrypoint.sh n8n-source/
+          chmod +x n8n-source/docker-entrypoint.sh
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./n8n-source
+          platforms: ${{ github.event.inputs.build_platforms }}
+          push: ${{ github.event.inputs.push_to_registry == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            N8N_VERSION=${{ github.event.inputs.n8n_version }}
+            BUILD_DATE={{date 'YYYY-MM-DD'}}
+            ENTERPRISE_MOCK=${{ github.event.inputs.include_enterprise_mock }}
+
+      - name: Generate usage instructions
+        if: ${{ github.event.inputs.push_to_registry == 'true' }}
+        run: |
+          echo "## 🎉 构建完成！" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 镜像信息" >> $GITHUB_STEP_SUMMARY
+          echo "- **镜像名称**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.n8n_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **最新标签**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **N8N版本**: ${{ github.event.inputs.n8n_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **企业版Mock**: ${{ github.event.inputs.include_enterprise_mock }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 使用方法" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# 拉取镜像" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.n8n_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# 运行容器" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --name n8n-integrated \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -p 5678:5678 \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -e N8N_ENTERPRISE_MOCK=true \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -e N8N_DEFAULT_LOCALE=zh-CN \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -v n8n_data:/home/node/.n8n \\" >> $GITHUB_STEP_SUMMARY
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.n8n_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY 

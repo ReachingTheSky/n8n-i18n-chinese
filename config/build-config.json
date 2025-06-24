@@ -1,0 +1,46 @@
+{
+  "supportedVersions": [
+    "1.99.1",
+    "1.98.0",
+    "1.97.0",
+    "1.96.0"
+  ],
+  "defaultVersion": "1.99.1",
+  "dockerPlatforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "registries": {
+    "ghcr": "ghcr.io",
+    "dockerhub": "docker.io"
+  },
+  "buildTimeout": 3600,
+  "enterpriseFeatures": {
+    "authentication": [
+      "saml",
+      "ldap",
+      "oidc"
+    ],
+    "management": [
+      "folders",
+      "projects",
+      "variables",
+      "workflowHistory"
+    ],
+    "development": [
+      "sourceControl",
+      "debugInEditor",
+      "logStreaming"
+    ],
+    "infrastructure": [
+      "multiInstance",
+      "s3BinaryData",
+      "workerView"
+    ],
+    "ai": [
+      "aiAssistant",
+      "askAi",
+      "aiCredits"
+    ]
+  }
+} 
