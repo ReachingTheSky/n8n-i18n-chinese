@@ -28,6 +28,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/n8n-integrated
+  NODE_OPTIONS: '--max_old_space_size=4096'
 
 jobs:
   build:
