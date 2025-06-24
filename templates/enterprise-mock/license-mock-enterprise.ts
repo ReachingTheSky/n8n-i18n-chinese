@@ -65,44 +65,46 @@ export class EnterpriseLicenseMocker {
     }
 
     private mockEnterpriseMethods(license: License): void {
+        const lic = license as any;
+
         // 认证相关
-        license.isSamlEnabled = () => true;
-        license.isLdapEnabled = () => true;
-        license.isOidcEnabled = () => true;
+        lic.isSamlEnabled = () => true;
+        lic.isLdapEnabled = () => true;
+        lic.isOidcEnabled = () => true;
 
         // 权限和角色
-        license.isAdvancedPermissionsLicensed = () => true;
-        license.isProjectRoleEditorLicensed = () => true;
-        license.isProjectRoleViewerLicensed = () => true;
+        lic.isAdvancedPermissionsLicensed = () => true;
+        lic.isProjectRoleEditorLicensed = () => true;
+        lic.isProjectRoleViewerLicensed = () => true;
 
         // 功能模块
-        license.isSourceControlLicensed = () => true;
-        license.isExternalSecretsEnabled = () => true;
-        license.isVariablesEnabled = () => true;
-        license.isWorkflowHistoryLicensed = () => true;
-        license.isDebugInEditorLicensed = () => true;
-        license.isBinaryDataS3Licensed = () => true;
-        license.isMultiMainLicensed = () => true;
-        license.isLogStreamingEnabled = () => true;
-        license.isWorkerViewLicensed = () => true;
+        lic.isSourceControlLicensed = () => true;
+        lic.isExternalSecretsEnabled = () => true;
+        lic.isVariablesEnabled = () => true;
+        lic.isWorkflowHistoryLicensed = () => true;
+        lic.isDebugInEditorLicensed = () => true;
+        lic.isBinaryDataS3Licensed = () => true;
+        lic.isMultiMainLicensed = () => true;
+        lic.isLogStreamingEnabled = () => true;
+        lic.isWorkerViewLicensed = () => true;
 
         // AI功能
-        license.isAiAssistantEnabled = () => true;
-        license.isAskAiEnabled = () => true;
+        lic.isAiAssistantEnabled = () => true;
+        lic.isAskAiEnabled = () => true;
 
         // 配额方法
-        license.getUsersLimit = () => UNLIMITED_LICENSE_QUOTA;
-        license.getTriggerLimit = () => UNLIMITED_LICENSE_QUOTA;
-        license.getVariablesLimit = () => UNLIMITED_LICENSE_QUOTA;
-        license.getWorkflowHistoryPruneLimit = () => UNLIMITED_LICENSE_QUOTA;
-        license.getTeamProjectLimit = () => UNLIMITED_LICENSE_QUOTA;
-        license.getAiCredits = () => 999999;
-        license.isWithinUsersLimit = () => true;
+        lic.getUsersLimit = () => UNLIMITED_LICENSE_QUOTA;
+        lic.getTriggerLimit = () => UNLIMITED_LICENSE_QUOTA;
+        lic.getVariablesLimit = () => UNLIMITED_LICENSE_QUOTA;
+        lic.getWorkflowHistoryPruneLimit = () => UNLIMITED_LICENSE_QUOTA;
+        lic.getTeamProjectLimit = () => UNLIMITED_LICENSE_QUOTA;
+        lic.getAiCredits = () => 999999;
+        lic.isWithinUsersLimit = () => true;
 
         // 许可证信息
-        license.getPlanName = () => 'Enterprise (Mocked)';
-        license.getConsumerId = () => 'enterprise-mock-consumer';
-        license.getManagementJwt = () => 'mock-jwt-token';
+        lic.getPlanName = () => 'Enterprise (Mocked)';
+        lic.getConsumerId = () => 'enterprise-mock-consumer';
+        lic.getManagementJwt = () => 'mock-jwt-token';
     }
 
     /**
